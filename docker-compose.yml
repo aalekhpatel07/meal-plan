@@ -1,0 +1,45 @@
+version: '3.1'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  kafka:
+    image: wurstmeister/kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      DOCKER_API_VERSION: 1.22
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_HOST_NAME: 172.17.0.1 # ip a "docker0"
+      KAFKA_CREATE_TOPICS: "links:1:1,crawl-results:1:1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092"
+      DYNAMIC_CONFIG_ENABLED: 'true'

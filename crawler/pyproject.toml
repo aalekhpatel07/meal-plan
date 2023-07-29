@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "crawler"
+version = "0.1.0"
+description = ""
+authors = ["Aalekh Patel <aalekh.gwpeck.7998@icloud.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+recipe-scrapers = "^14.40.0"
+redis = "^4.6.0"
+httpx = "^0.24.1"
+pydantic = "^2.1.1"
+structlog = "^23.1.0"
+aiokafka = "^0.8.1"
+msgpack = "^1.0.5"
+
+[tool.poetry.scripts]
+crawl_links_from_backlog = "scripts.crawl_links_from_backlog:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
