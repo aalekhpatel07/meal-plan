@@ -28,7 +28,8 @@ services:
       DOCKER_API_VERSION: 1.22
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_HOST_NAME: 172.17.0.1 # ip a "docker0"
-      KAFKA_CREATE_TOPICS: "links:1:1,crawl-results:1:1"
+      KAFKA_CREATE_TOPICS: "links:1:1,crawl-results:1:1,recipes:1:1"
+      KAFKA_MAX_MESSAGE_BYTES: 999999999
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped

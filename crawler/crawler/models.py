@@ -13,6 +13,7 @@ class CrawlResult(pydantic.BaseModel):
     elapsed_time: typing.Optional[float] = None
     contents: typing.Optional[bytes] = None
     status_code: typing.Optional[int] = None
+    timestamp: typing.Optional[str] = None
 
     @classmethod
     def from_msgpack(cls, value):

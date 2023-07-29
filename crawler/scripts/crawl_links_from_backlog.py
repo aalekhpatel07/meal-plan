@@ -5,7 +5,6 @@ import datetime
 import typing
 
 import httpx
-import dataclasses
 import json
 
 import structlog
@@ -33,8 +32,14 @@ class Crawler(QueueProcessor):
         )
 
     async def crawl(self, link: Link) -> typing.Optional[CrawlResult]:
+        headers = {}
+        if link.metadata:
+            referrer = link.metadata.get("referrer", None)
+            if referrer:
+                headers["referrer"] = referrer
+
         start_time = datetime.datetime.now()
-        response = await self.client.get(link.url)
+        response = await self.client.get(link.url, headers=headers)
         end_time = datetime.datetime.now()
         elapsed = end_time - start_time
         logger.debug(
@@ -53,7 +58,8 @@ class Crawler(QueueProcessor):
             url=link.url,
             elapsed_time=elapsed.total_seconds(),
             contents=response.content,
-            status_code=response.status_code
+            status_code=response.status_code,
+            timestamp=end_time.isoformat()
         )
         await self.producer.send('crawl-results', msgpack.packb(result.model_dump()))
         logger.debug("Sent to crawl-results")
