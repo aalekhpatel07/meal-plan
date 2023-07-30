@@ -57,9 +57,9 @@ class RecipeCollector(QueueProcessor):
 
     async def setup_consumer(self):
         await super().setup_consumer()
-        logger.info("Seeking all the way to the first message of 'recipes', temporarily.")
         if not self.from_beginning:
             return
+        logger.info("Seeking all the way to the first message of 'recipes'.")
         await self.consumer.seek_to_beginning(
             *[
                 aiokafka.TopicPartition('recipes', partition)
