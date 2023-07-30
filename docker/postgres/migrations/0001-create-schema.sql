@@ -5,6 +5,6 @@ SET search_path TO public;
 
 CREATE TABLE IF NOT EXISTS recipes
 (
-  id integer primary key,
+  id serial primary key,
   payload jsonb not null default '{}'::jsonb
 );

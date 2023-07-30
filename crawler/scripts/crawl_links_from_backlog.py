@@ -10,6 +10,7 @@ import bs4
 import urllib.parse
 import json
 import recipe_scrapers
+from time import perf_counter
 
 import structlog
 import msgpack
@@ -28,6 +29,8 @@ CRAWL_RECENCY_PERIOD = 60 * 60 * 24 * 7
 
 
 stats = statsd.StatsClient(
+    host=settings.config["statsd"]["host"],
+    port=int(settings.config["statsd"]["port"]),
     prefix=settings.config["statsd"]["prefix"]
 )
 
@@ -41,29 +44,39 @@ class Crawler(QueueProcessor):
         super().__init__()
         self.client = httpx.AsyncClient(
             follow_redirects=True,
-            timeout=30
+            timeout=30,
         )
 
     @stats.timer('crawl')
     async def crawl(self, link: Link) -> typing.Optional[CrawlResult]:
-        headers = {}
+        headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/114.0'
+        }
         if link.metadata:
             referrer = link.metadata.get("referrer", None)
             if referrer:
                 headers["referrer"] = referrer
 
-        start_time = datetime.datetime.now()
-        response = await self.client.get(link.url, headers=headers)
-        end_time = datetime.datetime.now()
+        if self.cache.get(f"visited__{link.url}"):
+            stats.incr(f'duplicate_url,hostname={link.hostname}')
+
+        start_time = perf_counter()
+        response = await self.client.get(
+            link.url,
+            headers=headers
+        )
+        end_time = perf_counter()
+        crawl_timestamp = datetime.datetime.now()
         elapsed = end_time - start_time
         logger.debug(
             "performed crawl:",
-            elapsed=f"{elapsed.total_seconds():.8f}",
+            elapsed=f"{elapsed:.8f}",
             status=response.status_code,
             url=link.url,
             metadata=link.metadata,
         )
-        crawl_duration_rounded = math.ceil(elapsed.total_seconds())
+        crawl_duration_rounded = math.ceil(elapsed)
         stats.incr(
             f'links_crawled,'
             f'hostname={link.hostname},'
@@ -80,10 +93,10 @@ class Crawler(QueueProcessor):
 
         result = CrawlResult(
             url=link.url,
-            elapsed_time=elapsed.total_seconds(),
+            elapsed_time=elapsed,
             contents=response.content,
             status_code=response.status_code,
-            timestamp=end_time.isoformat()
+            timestamp=crawl_timestamp.isoformat()
         )
         return result
 
@@ -105,11 +118,11 @@ class Crawler(QueueProcessor):
             if not url:
                 continue
             url = urllib.parse.urljoin(crawl_result.url, url)
-            hostname = urllib.parse.urlparse(url).hostname
+            hostname = urllib.parse.urlparse(url).hostname or 'unknown'
             if self.is_url_nofollow(url, crawl_result):
                 continue
             if self.has_link_been_visited_recently(url):
-                stats.incr(f'duplicate_url,hostname={hostname}')
+                stats.incr(f'prevented_duplicate_url,hostname={hostname}')
                 continue
             yield Link(url=url, metadata={'referrer': crawl_result.url})
 
@@ -122,10 +135,13 @@ class Crawler(QueueProcessor):
     @stats.timer('scrape_recipe_from_crawl_result')
     async def try_scraping_recipe_from_crawl_result(self, crawl_result: CrawlResult) -> bool:
         try:
+            if crawl_result.contents is None:
+                stats.incr(f'crawls_without_content,hostname={crawl_result.hostname}')
+                return False
             contents = crawl_result.contents.decode('utf-8')
         except UnicodeError:
             logger.error(f"Crawl for {crawl_result.url} yielded non-utf8 contents.")
-            stats.incr(f'utf8_invalid_contents,hostname={crawl_result.hostname}')
+            stats.incr(f'crawls_with_invalid_utf8_contents,hostname={crawl_result.hostname}')
             return False
         try:
             logger.debug("Trying to scrape recipe:", url=crawl_result.url)
@@ -152,6 +168,8 @@ class Crawler(QueueProcessor):
     async def process_message(self, link: Link):
         logger.debug("Processing message:", link=link)
         crawl_result = await self.crawl(link)
+        if crawl_result is None:
+            return
         could_scrape_recipe = await self.try_scraping_recipe_from_crawl_result(crawl_result)
         if could_scrape_recipe:
             links_found = 0

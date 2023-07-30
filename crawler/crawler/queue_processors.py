@@ -91,25 +91,27 @@ class QueueProcessor:
     async def process_message(self, message: T):
         raise NotImplementedError("Should be implemented by subclasses.")
 
-    async def run(self):
+    async def setup_consumer(self):
         _ = self.consumer
-        _ = self.producer
         try:
             await self.consumer.start()
         except kafka.errors.KafkaError as exc:
             logger.exception("kafka error", exception=exc)
             await self.consumer.stop()
-            await self.producer.stop()
-            return
 
+    async def setup_producer(self):
+        _ = self.producer
         try:
             await self.producer.start()
         except kafka.errors.KafkaError as exc:
             logger.exception("kafka error", exception=exc)
             await self.producer.stop()
-            # return
 
+    async def run(self):
+        await self.setup_consumer()
+        await self.setup_producer()
         try:
+            logger.debug("Listening for messages...")
             async for msg in self.consumer:
                 msg: aiokafka.ConsumerRecord = msg
                 message_decoded = self.decode_message(msg.value)
