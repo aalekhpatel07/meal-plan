@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.9'
 
 services:
   redis:
@@ -28,7 +28,7 @@ services:
       DOCKER_API_VERSION: 1.22
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_HOST_NAME: 172.17.0.1 # ip a "docker0"
-      KAFKA_CREATE_TOPICS: "links:1:1,crawl-results:1:1,recipes:1:1"
+      KAFKA_CREATE_TOPICS: "links:1:1,recipes:1:1"
       KAFKA_MAX_MESSAGE_BYTES: 999999999
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -44,3 +44,53 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092"
       DYNAMIC_CONFIG_ENABLED: 'true'
+
+  influxdb:
+    image: influxdb:2.1.1
+    ports:
+      - 8086:8086
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    env_file:
+      - ./docker/influxdb/influxdb.env
+    volumes:
+      - ./docker/influxdb_data:/var/lib/influxdb2
+      - ./docker/influxdb/config.yml:/etc/influxdb2/config.yml
+
+  telegraf:
+    image: telegraf:1.21
+    ports:
+      - "8125:8125/udp"
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    env_file:
+      - ./docker/telegraf/telegraf.env
+    volumes:
+      - ./docker/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+  grafana:
+    image: grafana/grafana-enterprise:8.4.4
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    user: root
+    depends_on:
+      - influxdb
+    env_file:
+      - ./docker/grafana/grafana.env
+    volumes:
+      - ./.generated_data/grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/etc/dashboards
