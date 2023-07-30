@@ -94,3 +94,16 @@ services:
       - ./.generated_data/grafana_data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
       - ./docker/grafana/dashboards:/etc/dashboards
+
+  db:
+    image: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: mealplan
+      POSTGRES_USER: mealplan
+      POSTGRES_DB: mealplan
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./.generated_data/db:/var/lib/postgresql/data
+      - ./docker/postgres/migrations:/docker-entrypoint-initdb.d

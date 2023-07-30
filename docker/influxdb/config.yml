@@ -28,7 +28,7 @@ reporting-disabled: false
 secret-store: bolt
 session-length: 60
 session-renew-disabled: false
-sqlite-path: "influxdb.db"
+sqlite-path: ""
 storage-cache-max-memory-size: 1073741824
 storage-cache-snapshot-memory-size: 26214400
 storage-cache-snapshot-write-cold-duration: 10m0s
