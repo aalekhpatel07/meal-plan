@@ -16,6 +16,9 @@ aiokafka = "^0.8.1"
 msgpack = "^1.0.5"
 statsd = "^4.0.1"
 psycopg2 = "^2.9.6"
+sqlalchemy = "^2.0.20"
+tqdm = "^4.66.1"
+alembic = "^1.11.3"
 
 [tool.poetry.scripts]
 crawl_links_from_backlog = "scripts.crawl_links_from_backlog:main"
