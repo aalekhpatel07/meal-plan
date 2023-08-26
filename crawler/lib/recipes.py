@@ -14,33 +14,27 @@ from sqlalchemy.orm import declarative_base
 
 
 def _get_engine_url():
-    postgres_config = settings.config['postgres']
-    user = quote_plus(postgres_config['user'])
-    password = quote_plus(postgres_config['password'])
-    host = quote_plus(postgres_config['host'])
-    port = quote_plus(postgres_config['port'])
-    database = quote_plus(postgres_config['database'])
+    postgres_config = settings.config["postgres"]
+    user = quote_plus(postgres_config["user"])
+    password = quote_plus(postgres_config["password"])
+    host = quote_plus(postgres_config["host"])
+    port = quote_plus(postgres_config["port"])
+    database = quote_plus(postgres_config["database"])
     return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
 
 
-engine = create_engine(
-    _get_engine_url(),
-    echo=True
-)
+engine = create_engine(_get_engine_url(), echo=True)
 
 Session = sessionmaker(engine)
 
 
 Base = declarative_base(
-    type_annotation_map={
-        dict[str, typing.Any]: JSON,
-        list[str]: ARRAY(Text)
-    }
+    type_annotation_map={dict[str, typing.Any]: JSON, list[str]: ARRAY(Text)}
 )
 
 
 class RecipeRaw(Base):
-    __tablename__ = 'scraped_recipe'
+    __tablename__ = "scraped_recipe"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_date: Mapped[datetime.datetime]
@@ -51,7 +45,7 @@ class RecipeRaw(Base):
 
 
 class Recipe(Base):
-    __tablename__ = 'recipe'
+    __tablename__ = "recipe"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
@@ -62,7 +56,7 @@ class Recipe(Base):
 
 
 class Ingredient(Base):
-    __tablename__ = 'ingredient'
+    __tablename__ = "ingredient"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     canonical_name: Mapped[str]
@@ -72,7 +66,7 @@ class Ingredient(Base):
 
 
 class MeasurementUnit(Base):
-    __tablename__ = 'measurement_unit'
+    __tablename__ = "measurement_unit"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
