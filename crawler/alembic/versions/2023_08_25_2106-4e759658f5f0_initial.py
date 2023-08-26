@@ -57,7 +57,7 @@ def upgrade() -> None:
             sa.ForeignKey("measurement_unit.id", ondelete='RESTRICT'),
             nullable=False
         ),
-        sa.Column("variant", sa.String(255), nullable=True),
+        sa.Column("extra_notes", sa.String(255), nullable=True),
         sa.Column("quantity", sa.Float, nullable=True)
     )
 

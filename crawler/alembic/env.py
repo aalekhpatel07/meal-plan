@@ -72,7 +72,8 @@ def run_migrations_online() -> None:
     """
     connectable = create_engine(
         url=_get_engine_url(),
-        poolclass=pool.NullPool
+        poolclass=pool.NullPool,
+        echo=True
     )
 
     with connectable.connect() as connection:

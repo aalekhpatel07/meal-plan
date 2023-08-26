@@ -23,7 +23,7 @@ def _get_engine_url():
     return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
 
 
-engine = create_engine(_get_engine_url(), echo=True)
+engine = create_engine(_get_engine_url(), echo=False)
 
 Session = sessionmaker(engine)
 
