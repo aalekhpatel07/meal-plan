@@ -106,4 +106,3 @@ services:
       - '5432:5432'
     volumes:
       - ./.generated_data/db:/var/lib/postgresql/data
-      - ./docker/postgres/migrations:/docker-entrypoint-initdb.d
