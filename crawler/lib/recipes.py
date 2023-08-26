@@ -82,4 +82,4 @@ class RecipeIngredient(Base):
     ingredient_id: Mapped[int] = mapped_column(ForeignKey("ingredient.id"))
     measurement_unit_id: Mapped[int] = mapped_column(ForeignKey("measurement_unit.id"))
     quantity: Mapped[float]
-    variant: Mapped[str]
+    extra_notes: Mapped[str]

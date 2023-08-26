@@ -76,7 +76,7 @@ def ask_chat_gpt_to_parse_ingredients(recipe_id: int, raw_ingredients: typing.It
     except openai.error.OpenAIError as err:
         logger.exception(f"OpenAI error: {err}", recipe_id=recipe_id)
         cache.rpush(f"chat_gpt_parse_error", recipe_id)
-        return None
+        raise
 
     choices = response.get("choices", [])
     if not len(choices):
@@ -108,11 +108,11 @@ def parse_ingredients(recipe: RecipeRaw) -> typing.List[typing.Dict[str, typing.
 
     # Only look at english recipes for now.
     if not recipe.payload["language"].startswith("en-"):
-        # logger.error(
-        #   "Rejecting recipe because it is not English",
-        #   language=recipe.scraped_extra["language"],
-        #   recipe=recipe.id
-        # )
+        logger.error(
+          "Rejecting recipe because it is not English",
+          language=recipe.scraped_extra["language"],
+          recipe=recipe.id
+        )
         return []
 
     ingredients_to_parse = list(filter(
